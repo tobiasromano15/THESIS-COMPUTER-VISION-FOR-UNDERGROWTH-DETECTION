@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['Surco']
+
+roboflow:
+  workspace: surcos-y-malezas
+  project: surcos
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/surcos-y-malezas/surcos/dataset/3
