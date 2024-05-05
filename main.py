@@ -1,54 +1,28 @@
-import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import torch
+import cv2
+from sklearn.cluster import KMeans
+from matplotlib import pyplot as plt
+
 # Cargar la imagen
+img = cv2.imread('/mnt/data/FOTO1.png')
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-image_path = 'DJI_0589.JPG'
-original_image = cv2.imread(image_path)
+# Cambiar el tamaño de la imagen para una rápida demostración
+img = cv2.resize(img, (img.shape[1] // 4, img.shape[0] // 4))
 
-# Convertir la imagen de RGB a HSV
-hsv_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2HSV)
+# Preparar los datos para el clustering
+data = img.reshape((-1, 3))
 
-# Definir el rango de color verde en HSV
-# Estos valores pueden necesitar ajustes
-lower_green = np.array([25, 52, 72])
-upper_green = np.array([102, 255, 255])
+# Clustering K-means
+kmeans = KMeans(n_clusters=2, random_state=0).fit(data)
+segmented_img = kmeans.labels_.reshape(img.shape[:2])
 
-# Crear una máscara que identifique los verdes
-mask = cv2.inRange(hsv_image, lower_green, upper_green)
-
-# Invertir la máscara para que los verdes sean negros y el resto blanco
-mask_inv = cv2.bitwise_not(mask)
-
-# Guardar la imagen de la máscara invertida
-label_image_path = 'DJI_0380_label_green.png'
-cv2.imwrite(label_image_path, mask_inv)
-
-# Mostrar la imagen original y la imagen de la máscara invertida
-fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-
-# Mostrar imagen original
-ax[0].imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
-ax[0].set_title('Original Image')
-ax[0].axis('off')
-
-# Mostrar imagen de la máscara invertida
-ax[1].imshow(mask_inv, cmap='gray')
-ax[1].set_title('Mask Inverted (Green to Black)')
-ax[1].axis('off')
-
-líneas = cv2.HoughLinesP(mask_inv, 1, np.pi/180, threshold=50, minLineLength=100, maxLineGap=10)
-
-
-imagen_dibujo = np.zeros_like(mask_inv)
-
-if líneas is not None:
-    for línea in líneas:
-        x1, y1, x2, y2 = línea[0]
-        cv2.line(imagen_dibujo, (x1, y1), (x2, y2), (255, 255, 255), 2)
-
-
-cv2.imshow('Líneas Detectadas', imagen_dibujo)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# Visualizar los resultados
+plt.figure(figsize=(10, 5))
+plt.subplot(121)
+plt.imshow(img)
+plt.title('Original Image')
+plt.subplot(122)
+plt.imshow(segmented_img, cmap='gray')
+plt.title('Segmented Image')
+plt.show()
