@@ -113,7 +113,7 @@ for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
         partialLine.append(imgRaster.xy(row, col))
     totalLines.append(partialLine)
     if math.degrees(angle + np.pi/2) > 90:
-        angleList.append(180 - math.degrees(angle + np.pi/2))
+        angleList.append(360 - math.degrees(angle + np.pi/2))
     else:
         angleList.append(math.degrees(angle + np.pi/2))
 
