@@ -68,7 +68,7 @@ schema = {
 }
 
 # Ensure the output directory exists
-output_dir = 'Shp'
+output_dir = '../../Shp'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
@@ -115,4 +115,6 @@ for line in df_filtered['geometry']:
     ax.plot(x, y, color='red')
 
 plt.tight_layout()
+output_path = '../output/output.png'
+plt.savefig(output_path)
 plt.show()
