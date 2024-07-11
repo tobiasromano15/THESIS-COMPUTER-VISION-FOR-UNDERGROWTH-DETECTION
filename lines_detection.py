@@ -9,6 +9,7 @@ from matplotlib import cm, gridspec
 import rasterio
 import fiona
 import geopandas as gpd
+from shapely.geometry import LineString
 
 # Machine learning libraries
 from skimage import feature
@@ -52,7 +53,8 @@ for _, angle, dist in zip(*hough_line_peaks(h, theta, d)):
 
     partialLine = []
     for col, row in zip(cols, rows):
-        partialLine.append(imgRaster.xy(row, col))
+        x, y = imgRaster.xy(int(row), int(col))
+        partialLine.append((x, y))
     totalLines.append(partialLine)
     if math.degrees(angle + np.pi/2) > 90:
         angleList.append(360 - math.degrees(angle + np.pi/2))
@@ -71,24 +73,22 @@ if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
 # Output shapefile
-outShp = fiona.open('Shp/croprows.shp', mode='w', driver='ESRI Shapefile', schema=schema, crs=imgRaster.crs)
-for index, line in enumerate(totalLines):
-    feature = {
-        'geometry': {'type': 'LineString', 'coordinates': line},
-        'properties': {'angle': angleList[index]}
-    }
-    outShp.write(feature)
-outShp.close()
+with fiona.open('Shp/croprows.shp', mode='w', driver='ESRI Shapefile', schema=schema, crs=imgRaster.crs) as outShp:
+    for index, line in enumerate(totalLines):
+        feature = {
+            'geometry': {'type': 'LineString', 'coordinates': line},
+            'properties': {'angle': angleList[index]}
+        }
+        outShp.write(feature)
 
 # Output GeoJSON
-outJson = fiona.open('Shp/croprows.geojson', mode='w', driver='GeoJSON', schema=schema, crs=imgRaster.crs)
-for index, line in enumerate(totalLines):
-    feature = {
-        'geometry': {'type': 'LineString', 'coordinates': line},
-        'properties': {'angle': angleList[index]}
-    }
-    outJson.write(feature)
-outJson.close()
+with fiona.open('Shp/croprows.geojson', mode='w', driver='GeoJSON', schema=schema, crs=imgRaster.crs) as outJson:
+    for index, line in enumerate(totalLines):
+        feature = {
+            'geometry': {'type': 'LineString', 'coordinates': line},
+            'properties': {'angle': angleList[index]}
+        }
+        outJson.write(feature)
 
 # Read the shapefile
 df = gpd.read_file('Shp/croprows.shp')
@@ -99,17 +99,20 @@ most_common_angle = df['angle'].mode()[0]
 # Filter the lines with the most common angle
 df_filtered = df[df['angle'] == most_common_angle]
 
-# Plot the original image and the filtered lines side by side
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 8))
+# Plot the original image and the filtered lines together
+fig, ax = plt.subplots(figsize=(10, 10))
 
 # Plot original image
-ax1.imshow(im, cmap='gray')
-ax1.set_title('Imagen original')
-ax1.axis('off')
+ax.imshow(im, cmap='gray', extent=(
+    imgRaster.bounds.left, imgRaster.bounds.right,
+    imgRaster.bounds.bottom, imgRaster.bounds.top
+))
+ax.set_title('Imagen original con líneas')
 
 # Plot filtered lines
-df_filtered.plot(column='angle', cmap='RdBu', ax=ax2)
-ax2.set_title(f'Líneas con el ángulo más común: {most_common_angle} grados')
+for line in df_filtered['geometry']:
+    x, y = line.xy
+    ax.plot(x, y, color='red')
 
 plt.tight_layout()
 plt.show()
