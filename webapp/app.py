@@ -11,15 +11,11 @@ def run_script(script_name):
     # Define la ruta al Dockerfile correspondiente
     dockerfile_path = f'./{script_name}'
 
-    # Construye la imagen Docker
-    build_result = subprocess.run(['docker', 'build', '-t', script_name, dockerfile_path])
-    if build_result.returncode != 0:
-        return jsonify({'error': 'Error building Docker image'}), 500
-
     # Ejecuta el contenedor y monta el volumen para guardar la imagen generada
-    run_result = subprocess.run(['docker', 'run', '--rm', '-v', f'{os.getcwd()}/output:/output', script_name])
+    run_result = subprocess.run(['docker', 'run', '--rm', '-v', f'{os.getcwd()}/output:/output', script_name],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if run_result.returncode != 0:
-        return jsonify({'error': 'Error running Docker container'}), 500
+        return jsonify({'error': 'Error running Docker container', 'details': run_result.stderr.decode('utf-8')}), 500
 
     # Asume que el script genera una imagen llamada 'output.png' en el directorio de trabajo
     image_path = f'./output/output.png'
