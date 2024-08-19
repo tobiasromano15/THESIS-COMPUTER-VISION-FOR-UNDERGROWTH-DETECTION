@@ -1,40 +1,50 @@
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-# Cargar la imagen
+import os
+import hough2
+from pruebasviejas import dividirimagenes
+from concurrent.futures import ProcessPoolExecutor
+import dilatacion
 
-image_path = 'FOTO1.png'
-original_image = cv2.imread(image_path)
 
-# Convertir la imagen de RGB a HSV
-hsv_image = cv2.cvtColor(original_image, cv2.COLOR_BGR2HSV)
+def generate_with_lines_filename(file_path):
+    # Divide la ruta en directorio, nombre base, y extensión
+    directory, filename = os.path.split(file_path)
+    name, ext = os.path.splitext(filename)
 
-# Definir el rango de color verde en HSV
-# Estos valores pueden necesitar ajustes
-lower_green = np.array([25, 52, 72])
-upper_green = np.array([102, 255, 255])
+    # Crea el nuevo nombre de archivo agregando "with_lines" antes de la extensión
+    new_filename = f"{name}_with_lines{ext}"
 
-# Crear una máscara que identifique los verdes
-mask = cv2.inRange(hsv_image, lower_green, upper_green)
+    # Combina el directorio con el nuevo nombre de archivo
+    new_file_path = os.path.join(directory, new_filename)
 
-# Invertir la máscara para que los verdes sean negros y el resto blanco
-mask_inv = cv2.bitwise_not(mask)
+    return new_file_path
+def dilatation():
+    imagenes = [os.path.join('subimagenes', f) for f in os.listdir('subimagenes') if f.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tif', '.tiff'))]
+    print(imagenes)
+    with ProcessPoolExecutor() as executor:
+        #resultados = list(executor.map(hough2.process_image_and_save, imagenes))
+        resultados = list(executor.map(dilatacion.dilatacion, imagenes))
+        #for filename in os.listdir('subimagenes'):
+    #file_path = os.path.join('subimagenes/',filename)
+    #hough.process_image_and_save(file_path,file_path)
 
-# Guardar la imagen de la máscara invertida
-label_image_path = 'FOTO1_label_green.png'
-cv2.imwrite(label_image_path, mask_inv)
+def divide(file_path):
+    dividirimagenes.dividir_y_guardar_subimagenes(file_path, 4, 2, 'subimagenes')
+    dilatation()
+def main(directory):
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        if os.path.isfile(file_path):
+            hough2.process_image_and_save(file_path)
+            dilatacion.dilatacion(file_path)
+            #unirimagenes.unir_subimagenes('subimagenes/',4,2,'result/imagen_unida.png')
 
-# Mostrar la imagen original y la imagen de la máscara invertida
-fig, ax = plt.subplots(1, 2, figsize=(12, 6))
 
-# Mostrar imagen original
-ax[0].imshow(cv2.cvtColor(original_image, cv2.COLOR_BGR2RGB))
-ax[0].set_title('Original Image')
-ax[0].axis('off')
 
-# Mostrar imagen de la máscara invertida
-ax[1].imshow(mask_inv, cmap='gray')
-ax[1].set_title('Mask Inverted (Green to Black)')
-ax[1].axis('off')
+if __name__ == "__main__":
+    """    parser = argparse.ArgumentParser(description="Iterar sobre archivos en un directorio.")
+    parser.add_argument('directory', type=str, help="Ruta del directorio a iterar")
 
+    args = parser.parse_args()
+    """
+    #main(args.directory)
+    main("C:/Users/Tobi/Desktop/TESIS/plantitas")
